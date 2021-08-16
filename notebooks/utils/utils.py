@@ -1,8 +1,14 @@
 import pandas as pd
 import numpy as np
 import talib
+import matplotlib.pyplot as plt
 
 def rename_columns_and_format(df):
+    '''
+    Recibe un dataframe con las columnas Date, Open, High, Low, Close y Volume
+    y retorna uno con las mismas columnas renombradas, ordenado por fecha y 
+    con fecha en formato YYYmmdd HMS
+    '''
     df.rename(columns={'Gmt time' : 'date', 
                    'Open':'open',
                    'High':'high',
@@ -18,6 +24,11 @@ def rename_columns_and_format(df):
     return df
 
 def train_test_split(p_train, x, y):
+    '''
+    Realiza una particion para entrenamiento y testeo para los inputs y el output del modelo.
+    Recibe el porcentaje de datos para entrenamiento, el input y el output del modelo.
+    Retorna los inputs de train y test, y los outputs de train y test.
+    '''
     train_size = int(len(x)*p_train)
 
     x_train = x[0:train_size]
@@ -31,6 +42,12 @@ def train_test_split(p_train, x, y):
 
 
 def create_windowed_dataset(df_prices, target, window):
+    '''
+    Retorna un dataframe en forma de ventana deslizante para entrenamiento y/o testeo de un modelo.
+    
+    Recibe un dataframe compuesto por lo precios y/o indicadores de un activo, los valores de salida
+    para cada uno de esas filas del primer dataset y el tamaño de la ventana (dias).
+    '''
     prices = df_prices.to_numpy().T
     
     x = []
@@ -56,7 +73,8 @@ def create_windowed_dataset(df_prices, target, window):
 
 def get_all_indicators(dataframe):
     '''
-        Que hace, que recibe como entrada y que devuelve como salida
+    Recibe un dataframe con las columnas Date, Open, High, Low, Close y Volume de un activo
+    y retorna el mismo dataset con mas columnas correspondientes a mas indicadores financieros
     '''
     df = dataframe.copy()    
     df["rsi"] = talib.RSI(df["close"], timeperiod=14)
@@ -83,3 +101,51 @@ def get_all_indicators(dataframe):
     df["d"] = d
     
     return df
+
+def plot(x1, x2, title, xlabel, ylabel, legend):
+    '''
+    Plotea un grafico correspondiente a dos variables
+    recibe las dos variables a graficar, un titulo, label para el eje x, label para el eje y, y una leyenda.
+    '''
+    plt.figure(figsize=(13,6))
+    plt.plot(x1)
+    plt.plot(x2)
+    plt.title(title)
+    plt.ylabel(xlabel)
+    plt.xlabel(ylabel)
+    plt.legend(legend, loc='upper right')
+    plt.show()
+
+def get_model(x_input, y_input):
+    '''
+    Retorna un modelo de redes neuronales con 
+    '''
+    model = tf.keras.models.Sequential()
+    
+    model.add(tf.keras.layers.Conv2D(32, (x_input, 3), input_shape=(x_input, y_input,1), activation='relu'))
+    model.add(tf.keras.layers.MaxPooling2D((1, 2)))
+    
+    model.add(tf.keras.layers.Conv2D(32, (1, 3), activation='relu'))
+    model.add(tf.keras.layers.MaxPooling2D((1, 2)))
+
+    model.add(tf.keras.layers.Conv2D(32, (1, 3), activation='relu'))
+    model.add(tf.keras.layers.MaxPooling2D((1, 2)))
+    
+    model.add(tf.keras.layers.Flatten())
+
+    model.add(tf.keras.layers.Dense(32, activation='relu'))
+    model.add(tf.keras.layers.Dropout(0.2))
+
+    model.add(tf.keras.layers.Dense(16, activation='relu'))
+    model.add(tf.keras.layers.Dropout(0.2))
+
+    model.add(tf.keras.layers.Dense(8, activation='relu'))
+    model.add(tf.keras.layers.Dropout(0.2))
+
+    model.add(tf.keras.layers.Dense(1, activation='linear'))
+
+    model.compile(loss='mse', optimizer='adam', metrics=[tf.keras.metrics.RootMeanSquaredError()])
+    
+    #model.summary()
+    
+    return model
