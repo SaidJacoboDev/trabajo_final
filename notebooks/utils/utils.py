@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import talib
 import matplotlib.pyplot as plt
+import tensorflow as tf
 
 def rename_columns_and_format(df):
     '''
