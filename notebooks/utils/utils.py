@@ -3,20 +3,16 @@ import numpy as np
 import talib
 import matplotlib.pyplot as plt
 import tensorflow as tf
+import os
 
-def rename_columns_and_format(df):
+def rename_columns_and_format(df, replace_columns):
     '''
     Recibe un dataframe con las columnas Date, Open, High, Low, Close y Volume
     y retorna uno con las mismas columnas renombradas, ordenado por fecha y 
     con fecha en formato YYYmmdd HMS
     '''
-    df.rename(columns={'Gmt time' : 'date', 
-                   'Open':'open',
-                   'High':'high',
-                   'Low':'low',
-                   'Close':'close',
-                   'Volume':'volume'}, inplace=True)
-
+    df.rename(columns=replace_columns, inplace=True)
+    
     df["date"] = pd.to_datetime(df['date'])
     df['date'] = pd.to_datetime(df['date'], format='%Y-%m-%d %H:%M:%S')
     df.sort_values('date', inplace=True)
@@ -39,8 +35,6 @@ def train_test_split(p_train, x, y):
     y_test = y[train_size:]
     
     return x_train, x_test, y_train, y_test
-
-
 
 def create_windowed_dataset(df_prices, target, window):
     '''
@@ -70,8 +64,6 @@ def create_windowed_dataset(df_prices, target, window):
     
     return x, y
 
-
-
 def get_all_indicators(dataframe):
     '''
     Recibe un dataframe con las columnas Date, Open, High, Low, Close y Volume de un activo
@@ -88,7 +80,6 @@ def get_all_indicators(dataframe):
     df["upper_bband"] = upper_band
     df["middle_bband"] = middle_band
     df["lower_bband"] = lower_band
-
 
     macd, macd_signal, macd_hist = talib.MACD(df["close"], fastperiod=12, slowperiod=26, signalperiod=9)
 
@@ -150,3 +141,20 @@ def get_model(x_input, y_input):
     #model.summary()
     
     return model
+
+def get_input_based_performance():
+    df_metrics = pd.DataFrame(columns=['loss','val_loss', 'root_mean_squared_error','val_root_mean_squared_error'])
+
+    files = os.listdir('../metrics')
+    for file in files:
+        input_name = file
+
+        path = os.path.join('../metrics', file)
+        df_metric = pd.read_csv(path)
+
+        df_metrics = df_metrics.append(df_metric.iloc[-1])
+
+    files = [f.split('.csv')[0] for f in files]
+    df_metrics.index = files
+    df_metrics.sort_values(by=['val_root_mean_squared_error'], inplace=True)
+    return df_metrics
